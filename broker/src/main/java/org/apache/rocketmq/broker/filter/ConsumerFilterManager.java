@@ -59,14 +59,14 @@ public class ConsumerFilterManager extends ConfigManager {
 
     public ConsumerFilterManager(BrokerController brokerController) {
         this.brokerController = brokerController;
-        this.bloomFilter = BloomFilter.createByFn(
-            brokerController.getBrokerConfig().getMaxErrorRateOfBloomFilter(),
-            brokerController.getBrokerConfig().getExpectConsumerNumUseFilter()
-        );
-        // then set bit map length of store config.
-        brokerController.getMessageStoreConfig().setBitMapLengthConsumeQueueExt(
-            this.bloomFilter.getM()
-        );
+//        this.bloomFilter = BloomFilter.createByFn(
+//            brokerController.getBrokerConfig().getMaxErrorRateOfBloomFilter(),
+//            brokerController.getBrokerConfig().getExpectConsumerNumUseFilter()
+//        );
+//        // then set bit map length of store config.
+//        brokerController.getMessageStoreConfig().setBitMapLengthConsumeQueueExt(
+//            this.bloomFilter.getM()
+//        );
     }
 
     /**
