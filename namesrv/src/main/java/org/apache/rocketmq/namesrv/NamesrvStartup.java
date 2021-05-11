@@ -62,7 +62,7 @@ public class NamesrvStartup {
             return controller;
         } catch (Throwable e) {
             e.printStackTrace();
-            System.exit(-1);
+            System.exit(-1);//system.exit(int status) 。status为0时为正常退出程序，也就是结束当前正在运行中的java虚拟机。status为非0的其他整数（包括负数，一般是1或者-1），表示非正常退出当前程序。正常退出，是指如果当前程序还有在执行的任务，则等待所有任务执行完成以后再退出；非正常退出，只要时间到了，立刻停止程序运行，不管是否还有任务在执行。
         }
 
         return null;
