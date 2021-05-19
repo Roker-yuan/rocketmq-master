@@ -111,23 +111,36 @@ public class RouteInfoManager {
         RegisterBrokerResult result = new RegisterBrokerResult();
         try {
             try {
+                //这里是加了个写锁，同一时间只能是一个线程来执行。lockInterruptibly 优先考虑响应中断，而不是响应锁的普通获取或重入获取
                 this.lock.writeLock().lockInterruptibly();
 
+                //下面根据clusterName获取一个该集群下broker name的set集合
                 Set<String> brokerNames = this.clusterAddrTable.get(clusterName);
                 if (null == brokerNames) {
                     brokerNames = new HashSet<String>();
                     this.clusterAddrTable.put(clusterName, brokerNames);
                 }
+                //将该broker放到set中
+                //这就是在维护一个集群里有哪些broker存在的一个set数据结构、
+                //在心跳机制发送注册请求时，因为set的特性，自动去重，这里不受影响
                 brokerNames.add(brokerName);
 
+                //是否为第一次注册
                 boolean registerFirst = false;
 
+                //根据brokerName从brokerAddrTable中获取broker的详细信息
+                //用一个brokerAddrTable作为核心路由数据表
+                //这里存放了所有的broker详细的路由数据
                 BrokerData brokerData = this.brokerAddrTable.get(brokerName);
+                //如果是第一次发送注册请求的时候，这里就是null
+                //那么就会封装一个BrokerData对象，放入到这个路由数据表里去
+                //其实这就是核心的broker注册的过程
                 if (null == brokerData) {
                     registerFirst = true;
                     brokerData = new BrokerData(clusterName, brokerName, new HashMap<Long, String>());
                     this.brokerAddrTable.put(brokerName, brokerData);
                 }
+                //下面是对路由数据做的一些处理
                 Map<Long, String> brokerAddrsMap = brokerData.getBrokerAddrs();
                 //Switch slave to master: first remove <1, IP:PORT> in namesrv, then add <0, IP:PORT>
                 //The same IP:PORT must only have one record in brokerAddrTable
@@ -156,6 +169,10 @@ public class RouteInfoManager {
                     }
                 }
 
+                //这里比较核心，这里就是每隔30s发动注册请求作为心跳的时候的核心处理逻辑
+                //每隔30s 都会封装一个BrokerLiveInfo放入map
+                //也就是说每隔30S,最新的brokerLiveInfo都会覆盖之前上一次的BrokerLiveInfo
+                //这个brokerLiveInfo里，就有一个当前时间戳，代表最近一次心跳的时间
                 BrokerLiveInfo prevBrokerLiveInfo = this.brokerLiveTable.put(brokerAddr,
                     new BrokerLiveInfo(
                         System.currentTimeMillis(),

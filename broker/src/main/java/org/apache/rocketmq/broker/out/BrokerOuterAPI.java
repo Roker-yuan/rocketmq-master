@@ -110,6 +110,20 @@ public class BrokerOuterAPI {
         this.remotingClient.updateNameServerAddressList(lst);
     }
 
+    /**
+     * @param clusterName
+     * @param brokerAddr
+     * @param brokerName
+     * @param brokerId
+     * @param haServerAddr
+     * @param topicConfigWrapper
+     * @param filterServerList
+     * @param oneway
+     * @param timeoutMills
+     * @param compressed
+     * @return
+     * 网络级别的注册逻辑
+     */
     public List<RegisterBrokerResult> registerBrokerAll(
         final String clusterName,
         final String brokerAddr,
@@ -122,10 +136,14 @@ public class BrokerOuterAPI {
         final int timeoutMills,
         final boolean compressed) {
 
-        final List<RegisterBrokerResult> registerBrokerResultList = new CopyOnWriteArrayList<>();
+        //初始化一个list 用来存放向每个NameServer注册的结果
+        final List<RegisterBrokerResult> registerBrokerResultList = new CopyOnWriteArrayList<>();//写数组的拷贝，支持高效率并发且是线程安全的,读操作无锁的ArrayList。读多写少的场景
+        //NameServer的地址列表
         List<String> nameServerAddressList = this.remotingClient.getNameServerAddressList();
         if (nameServerAddressList != null && nameServerAddressList.size() > 0) {
 
+            //构建注册的网络请求
+            // 设置请求头
             final RegisterBrokerRequestHeader requestHeader = new RegisterBrokerRequestHeader();
             requestHeader.setBrokerAddr(brokerAddr);
             requestHeader.setBrokerId(brokerId);
@@ -133,21 +151,25 @@ public class BrokerOuterAPI {
             requestHeader.setClusterName(clusterName);
             requestHeader.setHaServerAddr(haServerAddr);
             requestHeader.setCompressed(compressed);
-
+            //设置请求体
             RegisterBrokerBody requestBody = new RegisterBrokerBody();
             requestBody.setTopicConfigSerializeWrapper(topicConfigWrapper);
             requestBody.setFilterServerList(filterServerList);
             final byte[] body = requestBody.encode(compressed);
             final int bodyCrc32 = UtilAll.crc32(body);
             requestHeader.setBodyCrc32(bodyCrc32);
+            //CountDownLatch 设定只有注册完全部的NameServer之后才能继续往下走
             final CountDownLatch countDownLatch = new CountDownLatch(nameServerAddressList.size());
+            //遍历NameServer地址列表-向所有地址进行注册
             for (final String namesrvAddr : nameServerAddressList) {
                 brokerOuterExecutor.execute(new Runnable() {
                     @Override
                     public void run() {
                         try {
+                            //registerBroker 注册 Broker信息
                             RegisterBrokerResult result = registerBroker(namesrvAddr,oneway, timeoutMills,requestHeader,body);
                             if (result != null) {
+                                //注册完成后把结果存放到一个list中去
                                 registerBrokerResultList.add(result);
                             }
 

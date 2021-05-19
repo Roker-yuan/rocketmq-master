@@ -61,6 +61,7 @@ public class BrokerStartup {
     public static BrokerController start(BrokerController controller) {
         try {
 
+            //启动
             controller.start();
 
             String tip = "The broker[" + controller.getBrokerConfig().getBrokerName() + ", "
@@ -71,6 +72,7 @@ public class BrokerStartup {
             }
 
             log.info(tip);
+            //成功启动后打印   The broker[broker-a, 127.0.0.1:10911] boot success. serializeType=JSON and name server is 127.0.0.1:9876
             System.out.printf("%s%n", tip);
             return controller;
         } catch (Throwable e) {
